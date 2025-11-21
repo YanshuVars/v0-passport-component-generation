@@ -18,6 +18,14 @@ interface PassportFormProps {
 }
 
 export default function PassportForm({ onSubmit }: PassportFormProps) {
+  const countries = [
+    { name: "INDIA", flag: "🇮🇳" },
+    { name: "FRANCE", flag: "🇫🇷" },
+    { name: "USA", flag: "🇺🇸" },
+    { name: "RUSSIA", flag: "🇷🇺" },
+    { name: "UNITED KINGDOM", flag: "🇬🇧" },
+  ]
+
   const [formData, setFormData] = useState({
     fullName: "",
     dateOfBirth: "",
@@ -26,7 +34,7 @@ export default function PassportForm({ onSubmit }: PassportFormProps) {
     photo: "",
   })
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
@@ -106,27 +114,39 @@ export default function PassportForm({ onSubmit }: PassportFormProps) {
           {/* Nationality */}
           <div className="space-y-2">
             <Label className="text-slate-700 font-medium">Nationality</Label>
-            <Input
+            <select
               name="nationality"
               value={formData.nationality}
               onChange={handleChange}
-              placeholder="United States"
-              className="border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-slate-300 rounded-md text-slate-900 focus:border-blue-500 focus:ring-blue-500 bg-white cursor-pointer"
               required
-            />
+            >
+              <option value="">Select a country</option>
+              {countries.map((country) => (
+                <option key={country.name} value={country.name}>
+                  {country.flag} {country.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Destination */}
           <div className="space-y-2">
             <Label className="text-slate-700 font-medium">Destination</Label>
-            <Input
+            <select
               name="destination"
               value={formData.destination}
               onChange={handleChange}
-              placeholder="Paris, France"
-              className="border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-slate-300 rounded-md text-slate-900 focus:border-blue-500 focus:ring-blue-500 bg-white cursor-pointer"
               required
-            />
+            >
+              <option value="">Select a destination</option>
+              {countries.map((country) => (
+                <option key={country.name} value={country.name}>
+                  {country.flag} {country.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Photo Upload */}

@@ -19,6 +19,15 @@ export default function PassportPage({ data, showStamp, onClose }: PassportPageP
   const [stampVisible, setStampVisible] = useState(false)
   const [stampRotation, setStampRotation] = useState(0)
   const [fadeInElements, setFadeInElements] = useState(false)
+  const [isDownloading, setIsDownloading] = useState(false)
+
+  const countryFlags: { [key: string]: string } = {
+    INDIA: "🇮🇳",
+    FRANCE: "🇫🇷",
+    USA: "🇺🇸",
+    RUSSIA: "🇷🇺",
+    "UNITED KINGDOM": "🇬🇧",
+  }
 
   useEffect(() => {
     setFadeInElements(true)
@@ -47,6 +56,32 @@ export default function PassportPage({ data, showStamp, onClose }: PassportPageP
       month: "2-digit",
       year: "numeric",
     })
+  }
+
+  const downloadPassport = async () => {
+    setIsDownloading(true)
+    try {
+      const { default: html2canvas } = await import("html2canvas")
+      const passportElement = document.getElementById("passport-content")
+      if (!passportElement) return
+
+      const canvas = await html2canvas(passportElement, {
+        backgroundColor: "#ffffff",
+        scale: 2,
+        logging: false,
+      })
+
+      const link = document.createElement("a")
+      link.href = canvas.toDataURL("image/png")
+      link.download = `passport-${data.fullName.replace(/\s+/g, "-").toLowerCase()}.png`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    } catch (error) {
+      console.error("Download failed:", error)
+    } finally {
+      setIsDownloading(false)
+    }
   }
 
   const dreamID = generateDreamID()
@@ -122,7 +157,10 @@ export default function PassportPage({ data, showStamp, onClose }: PassportPageP
         }
       `}</style>
 
-      <div className="book-container grid grid-cols-2 gap-0 bg-white rounded-lg shadow-2xl overflow-hidden border border-slate-200">
+      <div
+        id="passport-content"
+        className="book-container grid grid-cols-2 gap-0 bg-white rounded-lg shadow-2xl overflow-hidden border border-slate-200 relative"
+      >
         {/* LEFT PAGE - Cover Interior */}
         <div className="bg-gradient-to-br from-blue-900 to-blue-800 p-12 flex flex-col justify-between items-center text-center border-r-2 border-slate-300">
           <div className="space-y-8">
@@ -156,7 +194,7 @@ export default function PassportPage({ data, showStamp, onClose }: PassportPageP
           <div className="grid grid-cols-3 gap-6">
             {/* Photo */}
             <div className="fade-in-element fade-in-2 col-span-1 flex flex-col items-center space-y-2">
-              <div className="w-28 h-36 bg-slate-300 rounded border-2 border-amber-900 flex items-center justify-center overflow-hidden shadow-md">
+              <div className="w-28 h-28 bg-slate-300 rounded-full border-2 border-amber-900 flex items-center justify-center overflow-hidden shadow-md">
                 {data.photo ? (
                   <img
                     src={data.photo || "/placeholder.svg"}
@@ -186,7 +224,9 @@ export default function PassportPage({ data, showStamp, onClose }: PassportPageP
                 </div>
                 <div>
                   <p className="text-[8px] font-bold text-amber-800 tracking-wider mb-1">NATIONALITY</p>
-                  <p className="text-xs font-mono text-amber-900">{data.nationality}</p>
+                  <p className="text-xs font-mono text-amber-900">
+                    {countryFlags[data.nationality]} {data.nationality}
+                  </p>
                 </div>
               </div>
             </div>
@@ -214,42 +254,74 @@ export default function PassportPage({ data, showStamp, onClose }: PassportPageP
             </div>
           </div>
         </div>
+
+        {/* Stamp - Overlays on the right page */}
+        {stampVisible && (
+          <div className="absolute right-24 top-1/2 transform -translate-y-1/2 stamp-container pointer-events-none">
+            <svg className="w-40 h-40" viewBox="0 0 120 120" style={{ transform: `rotate(${stampRotation}deg)` }}>
+              {/* Outer circle */}
+              <circle cx="60" cy="60" r="55" fill="none" stroke="#1e3a8a" strokeWidth="2.5" opacity="0.85" />
+              {/* Inner circle */}
+              <circle cx="60" cy="60" r="50" fill="none" stroke="#1e3a8a" strokeWidth="1.5" opacity="0.6" />
+
+              {/* Destination text on top arc */}
+              <defs>
+                <path id="topArc" d="M 20,60 A 40,40 0 0,1 100,60" fill="none" />
+              </defs>
+              <text fill="#1e3a8a" fontSize="10" fontWeight="bold" opacity="0.85" letterSpacing="1">
+                <textPath href="#topArc" startOffset="50%" textAnchor="middle">
+                  {data.destination.toUpperCase()}
+                </textPath>
+              </text>
+
+              {/* Center checkmark */}
+              <text
+                x="60"
+                y="65"
+                textAnchor="middle"
+                className="font-bold"
+                fill="#1e3a8a"
+                opacity="0.85"
+                style={{ fontSize: "32px", fontWeight: "bold" }}
+              >
+                ✓
+              </text>
+
+              {/* "DEPARTURE" text on bottom arc */}
+              <defs>
+                <path id="bottomArc" d="M 100,60 A 40,40 0 0,1 20,60" fill="none" />
+              </defs>
+              <text fill="#1e3a8a" fontSize="10" fontWeight="bold" opacity="0.85" letterSpacing="1">
+                <textPath href="#bottomArc" startOffset="50%" textAnchor="middle">
+                  DEPARTURE
+                </textPath>
+              </text>
+
+              {/* Date at bottom center */}
+              <text
+                x="60"
+                y="110"
+                textAnchor="middle"
+                className="font-bold"
+                fill="#1e3a8a"
+                opacity="0.75"
+                style={{ fontSize: "8px", fontWeight: "bold", letterSpacing: "0.5px" }}
+              >
+                {new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "2-digit" })}
+              </text>
+            </svg>
+          </div>
+        )}
       </div>
 
-      {/* Stamp - Overlays on the right page */}
-      {stampVisible && (
-        <div className="absolute right-24 top-1/2 transform -translate-y-1/2 stamp-container pointer-events-none">
-          <svg className="w-32 h-32" viewBox="0 0 120 120" style={{ transform: `rotate(${stampRotation}deg)` }}>
-            <circle cx="60" cy="60" r="50" fill="none" stroke="#dc2626" strokeWidth="3" opacity="0.9" />
-            <circle cx="60" cy="60" r="45" fill="none" stroke="#dc2626" strokeWidth="1" opacity="0.5" />
-            <text
-              x="60"
-              y="55"
-              textAnchor="middle"
-              className="font-bold text-2xl"
-              fill="#dc2626"
-              opacity="0.9"
-              style={{ fontSize: "20px", fontWeight: "bold" }}
-            >
-              ✓
-            </text>
-            <text
-              x="60"
-              y="72"
-              textAnchor="middle"
-              className="text-xs font-bold"
-              fill="#dc2626"
-              opacity="0.9"
-              style={{ fontSize: "10px", fontWeight: "bold", letterSpacing: "0.2em" }}
-            >
-              APPROVED
-            </text>
-          </svg>
-        </div>
-      )}
-
-      {/* Close Button */}
-      <div className="mt-8 flex justify-center">
+      <div className="mt-8 flex justify-center gap-4">
+        <Button
+          onClick={downloadPassport}
+          disabled={isDownloading}
+          className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-6 rounded-lg transition disabled:opacity-50"
+        >
+          {isDownloading ? "Downloading..." : "Download Passport"}
+        </Button>
         <Button
           onClick={onClose}
           className="bg-blue-900 hover:bg-blue-950 text-white font-semibold py-2 px-6 rounded-lg transition"
